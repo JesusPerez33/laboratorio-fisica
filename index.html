@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laboratorio de Cuerpo Libre</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Física mecánica · prototipo v0.1</p>
+    <h1>Laboratorio de Cuerpo Libre</h1>
+    <p class="lede">Configura un problema de dinámica. El programa decide qué fuerzas actúan, dibuja el diagrama de cuerpo libre, resuelve la segunda ley de Newton paso a paso, simula el movimiento y contrasta la predicción con tus mediciones.</p>
+  </header>
+
+  <nav class="tabs" id="tabs" aria-label="Tipo de problema"></nav>
+
+  <section class="work">
+    <aside class="panel controls" id="controls" aria-label="Datos del problema"></aside>
+    <div class="stage">
+      <div class="paper"><svg id="scene" viewBox="0 0 640 440" role="img" aria-label="Montaje del problema"></svg></div>
+      <div id="warn" class="warn" hidden></div>
+      <div class="transport">
+        <button class="btn primary" id="play" type="button">Reproducir</button>
+        <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Instante de la simulación">
+        <select id="speed" aria-label="Velocidad de reproducción"><option value="1">1×</option><option value="0.5">0,5×</option><option value="0.25">0,25×</option></select>
+      </div>
+      <dl class="readouts">
+        <div><dt>Tiempo</dt><dd id="o_t">0</dd></div>
+        <div><dt>Posición s</dt><dd id="o_s">0</dd></div>
+        <div><dt>Velocidad</dt><dd id="o_v">0</dd></div>
+        <div><dt>Aceleración</dt><dd id="o_a">0</dd></div>
+        <div><dt>Estado</dt><dd class="txt" id="o_e"></dd></div>
+      </dl>
+      <p class="note" id="conv"></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Diagrama de cuerpo libre</h2>
+    <p class="note">Las flechas están a escala entre sí y se actualizan durante la simulación: si el bloque se detiene o cambia de sentido, la fricción cambia con él.</p>
+    <div class="fbds" id="fbds"></div>
+    <ul class="legend">
+      <li class="w"><i></i>Peso</li><li class="n"><i></i>Normal</li><li class="f"><i></i>Fricción</li><li class="t"><i></i>Tensión</li><li class="p"><i></i>Fuerza aplicada</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Solución paso a paso</h2>
+    <ol class="steps" id="steps"></ol>
+  </section>
+
+  <section>
+    <h2>Movimiento simulado</h2>
+    <p class="note">El motor avanza el sistema en pasos de 1/240 s. En cada paso recalcula la fricción según la velocidad, así detecta cuándo el cuerpo se detiene, se queda quieto o regresa.</p>
+    <div class="charts">
+      <div class="panel"><svg id="ch_s" viewBox="0 0 380 230" role="img" aria-label="Posición contra tiempo"></svg></div>
+      <div class="panel"><svg id="ch_v" viewBox="0 0 380 230" role="img" aria-label="Velocidad contra tiempo"></svg></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Contraste con el experimento</h2>
+    <p class="note">Pega aquí tiempo y posición medidos en el video de tu montaje, un par por línea. Se ajusta <span class="eq">x = x<sub>0</sub> + v<sub>0</sub>t + ½at²</span> por mínimos cuadrados y se compara la aceleración medida con la que predice el modelo de arriba.</p>
+    <div class="exp">
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+        <label for="data" style="font-weight:600;font-size:13.5px">t (s), x (m) <span class="tag" id="extag">Datos de ejemplo</span></label>
+        <textarea id="data" spellcheck="false"></textarea>
+        <div><button class="btn small" id="exreset" type="button">Restaurar ejemplo</button></div>
+      </div>
+      <div class="res">
+        <dl class="readouts">
+          <div><dt>a medida</dt><dd id="e_a">–</dd></div>
+          <div><dt>a del modelo</dt><dd id="e_m">–</dd></div>
+          <div><dt>Diferencia</dt><dd id="e_d">–</dd></div>
+          <div><dt>μₖ implícito</dt><dd id="e_mu">–</dd></div>
+        </dl>
+        <p class="verdict" id="e_v"></p>
+        <div class="panel"><svg id="ch_e" viewBox="0 0 380 230" role="img" aria-label="Datos medidos, ajuste y modelo"></svg></div>
+        <ul class="legend"><li><i style="background:var(--ink);width:7px;height:7px;border-radius:50%"></i>Medición</li><li style="color:var(--accent)"><i></i>Ajuste a tus datos</li><li class="w"><i></i>Predicción del modelo (línea discontinua)</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <footer><p>Supuestos del modelo: cuerpos tratados como partículas, cuerda y polea ideales (sin masa ni fricción en el eje), fricción de Coulomb con coeficientes constantes y sin resistencia del aire. Las diferencias con el experimento salen de ahí.</p></footer>
+</div>
+
+<!-- El orden importa: cada archivo usa lo que definen los anteriores -->
+<script src="js/config.js"></script>
+<script src="js/fisica.js"></script>
+<script src="js/dibujo.js"></script>
+<script src="js/solucion.js"></script>
+<script src="js/graficas.js"></script>
+<script src="js/experimento.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
