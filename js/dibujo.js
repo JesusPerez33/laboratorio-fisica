@@ -154,6 +154,8 @@
    * @param {object} [opts]  descomponer: {cls, etiquetas: [sobre y, sobre x]}
    *                           dibuja las componentes de esa fuerza sobre los ejes
    *                         acel: {ang, mag} muestra aparte el vector aceleración
+   *                         vel: {ang, mag, frac} lo mismo con la velocidad; frac (0 a 1)
+   *                           es la fracción de la rapidez máxima y fija el largo
    *                         forma: 'circulo' dibuja el cuerpo como una esfera
    */
   function fbdSVG(title, forces, axDeg, opts) {
@@ -219,14 +221,57 @@
       }
       h += '<text class="accl" x="12" y="270">a = ' + n3(A.mag) + ' m/s²</text>';
     }
+
+    // Velocidad: también aparte. Su flecha crece y se encoge con la animación
+    if (opts.vel) {
+      var V = opts.vel, vx0 = 46, vy0 = 50;
+      if (V.mag > 1e-6) {
+        var medio = 6 + 16 * Math.min(1, V.frac);
+        var vdx = Math.cos(V.ang) * medio, vdy = -Math.sin(V.ang) * medio;
+        h += arrow(vx0 - vdx, vy0 - vdy, vx0 + vdx, vy0 + vdy, 'vel');
+      }
+      h += '<text class="accl" x="12" y="18">v = ' + n3(V.mag) + ' m/s</text>';
+    }
+    return '<div class="paper fbd"><h3>' + title + '</h3>' + h + '</svg></div>';
+  }
+
+  /**
+   * Vista desde arriba de un movimiento circular: el cuerpo sobre su
+   * trayectoria, la fuerza horizontal neta (siempre hacia el centro) y la
+   * velocidad (siempre tangente). Las dos giran con el cuerpo.
+   * @param {number} posAng  ángulo de la posición visto desde el centro (rad)
+   * @param {object} fuerza  {b, sub, mag, cls} fuerza horizontal
+   * @param {number} velAng  dirección de la velocidad (rad)
+   * @param {string} nota    qué fuerzas no se ven por ser verticales
+   */
+  function topViewSVG(title, posAng, fuerza, velAng, vTexto, nota) {
+    var cx = 190, cy = 132, R = 78;
+    var px = cx + R * Math.cos(posAng), py = cy - R * Math.sin(posAng);
+    var ux = (cx - px) / R, uy = (cy - py) / R;             // unitario hacia el centro
+    var vx = Math.cos(velAng), vy = -Math.sin(velAng);
+    var ancla = function (ox) { return ox > 0.35 ? 'start' : ox < -0.35 ? 'end' : 'middle'; };
+    var sub = fuerza.sub ? '<tspan dy="4" font-size="10.5">' + fuerza.sub + '</tspan><tspan dy="-4"> </tspan>' : ' ';
+
+    var h = '<svg viewBox="0 0 380 280" role="img" aria-label="' + title + '">' +
+      '<circle class="ax" cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none"/>' +
+      '<circle class="hub" cx="' + cx + '" cy="' + cy + '" r="3"/>' +
+      arrow(px, py, px + vx * 54, py + vy * 54, 'vel') +
+      '<text class="accl" x="' + (px + vx * 66) + '" y="' + (py + vy * 66 + 5) + '" text-anchor="' + ancla(vx) + '">' + vTexto + '</text>' +
+      arrow(px, py, px + ux * 56, py + uy * 56, fuerza.cls) +
+      '<circle class="body" cx="' + px + '" cy="' + py + '" r="11"/>' +
+      // El rótulo de la fuerza va por fuera del círculo, del lado opuesto al centro
+      '<text class="fl ' + fuerza.cls + '" x="' + (px - ux * 20) + '" y="' + (py - uy * 22 + 5) + '" text-anchor="' + ancla(-ux) + '">' + fuerza.b + sub + '= ' + n3(fuerza.mag) + ' N</text>' +
+      '<text class="tk" x="190" y="268" text-anchor="middle">' + nota + '</text>';
     return '<div class="paper fbd"><h3>' + title + '</h3>' + h + '</svg></div>';
   }
 
   /**
    * Arma la lista de fuerzas de cada cuerpo según el problema y el
    * estado actual k (de fisica.dyn), y pinta los diagramas en el.
+   * @param {object} st   estado {s, v} en este instante
+   * @param {object} sim  simulación completa (se usa su rapidez máxima)
    */
-  function renderFBD(el, sc, p, md, k) {
+  function renderFBD(el, sc, p, md, k, st, sim) {
     var g = p.g, arriba = Math.PI / 2, abajo = -Math.PI / 2, h;
     // La fricción apunta a favor o en contra del eje según su signo
     var friccion = function (th) {
@@ -234,6 +279,8 @@
     };
     // Aceleración a lo largo de una dirección dada (cambia de sentido con el signo)
     var acel = function (ang) { return { ang: k.a >= 0 ? ang : ang + Math.PI, mag: Math.abs(k.a) }; };
+    // Velocidad en esa misma dirección; su largo es proporcional a la rapidez
+    var vel = function (ang) { return { ang: st.v >= 0 ? ang : ang + Math.PI, mag: Math.abs(st.v), frac: Math.abs(st.v) / (sim.vmax || 1) }; };
     var peso = { cls: 'w', etiquetas: ['W cos θ', 'W sen θ'] };
 
     if (sc.type === 'plano') {
@@ -243,13 +290,13 @@
         { b: 'N', mag: md.N, ang: th + arriba, cls: 'n' },
         { b: 'P', mag: p.P, ang: th + rad(p.phi), cls: 'p' },
         friccion(th)
-      ], p.th || 0, { descomponer: peso, acel: acel(th) });
+      ], p.th || 0, { descomponer: peso, acel: acel(th), vel: vel(th) });
     } else {
       var T = Lab.fisica.tension(p, k.a);
       var colgante = [{ b: 'W', sub: '2', mag: p.m2 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }];
       if (sc.type === 'atwood') {
-        h = fbdSVG('Masa m₁', [{ b: 'W', sub: '1', mag: p.m1 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }], 0, { acel: acel(arriba) }) +
-            fbdSVG('Masa m₂', colgante, 0, { acel: acel(abajo) });
+        h = fbdSVG('Masa m₁', [{ b: 'W', sub: '1', mag: p.m1 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }], 0, { acel: acel(arriba), vel: vel(arriba) }) +
+            fbdSVG('Masa m₂', colgante, 0, { acel: acel(abajo), vel: vel(abajo) });
       } else {
         var th2 = rad(p.th);
         h = fbdSVG('Bloque m₁ (sobre el plano)', [
@@ -257,12 +304,12 @@
           { b: 'N', mag: md.N, ang: th2 + arriba, cls: 'n' },
           { b: 'T', mag: T, ang: th2, cls: 't' },
           friccion(th2)
-        ], p.th, { descomponer: peso, acel: acel(th2) }) + fbdSVG('Masa colgante m₂', colgante, 0, { acel: acel(abajo) });
+        ], p.th, { descomponer: peso, acel: acel(th2), vel: vel(th2) }) + fbdSVG('Masa colgante m₂', colgante, 0, { acel: acel(abajo), vel: vel(abajo) });
       }
     }
     el.innerHTML = h;
   }
 
-  Lab.dibujo = { arrow: arrow, niceStep: niceStep, tickVals: tickVals, buildScene: buildScene, fbdSVG: fbdSVG, renderFBD: renderFBD };
+  Lab.dibujo = { arrow: arrow, niceStep: niceStep, tickVals: tickVals, buildScene: buildScene, fbdSVG: fbdSVG, topViewSVG: topViewSVG, renderFBD: renderFBD };
 
 })(window.Lab);

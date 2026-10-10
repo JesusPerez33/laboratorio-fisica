@@ -40,8 +40,7 @@
     graficas: null,           // {mover}: actualiza los puntos móviles de las gráficas
     energia: null,            // función que actualiza las barras de energía
     tau: 0,                   // instante que se está mostrando (s)
-    reproduciendo: false, ultimoCuadro: 0, rapidez: 1,
-    claveDCL: ''              // evita redibujar el diagrama si nada cambió
+    reproduciendo: false, ultimoCuadro: 0, rapidez: 1
   };
   Object.keys(SC).forEach(function (k) { estado.valores[k] = Object.assign({}, SC[k].def); });
 
@@ -87,7 +86,8 @@
     estado.md = motor.model(sc.type, p);
     estado.sim = motor.simulate(estado.md, p);
     estado.k0 = motor.dyn(estado.md, estado.sim.V[0], estado.sim.S[0]);
-    estado.reproduciendo = false; estado.tau = 0; estado.claveDCL = '';
+    estado.reproduciendo = false; estado.tau = 0;
+    estado.sim.vmax = Math.max.apply(null, estado.sim.V.map(Math.abs));   // para escalar la flecha de velocidad
 
     // 2. Advertencias sobre los límites del modelo
     var avisos = [];
@@ -147,13 +147,9 @@
     estado.graficas.mover(estado.tau, st, k);
     if (estado.energia) estado.energia(estado.tau, st);
 
-    // El diagrama se redibuja cuando cambia el régimen (reposo / sentido).
-    // phase === null significa que las fuerzas cambian en cada instante.
-    var clave = estado.actual + k.phase;
-    if (k.phase === null || clave !== estado.claveDCL) {
-      estado.claveDCL = clave;
-      fam.dibujo.renderFBD($('fbds'), sc, p, estado.md, k, st);
-    }
+    // El diagrama se redibuja en cada cuadro: fuerzas, aceleración y velocidad
+    // corresponden siempre al instante que se está mostrando.
+    fam.dibujo.renderFBD($('fbds'), sc, p, estado.md, k, st, sim);
   }
 
   function actualizarBoton() {

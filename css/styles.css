@@ -136,3 +136,5 @@ footer p{margin:0;max-width:80ch}
 /* Halo detrás de los rótulos para que los ejes no los crucen */
 .fl,.cmpl,.accl,.axl,.tk,.ang{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
 .solid~.tk{stroke:none}
+.F.vel line{stroke-width:2.2}
+circle.ax{fill:none}

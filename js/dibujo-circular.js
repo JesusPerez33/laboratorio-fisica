@@ -114,23 +114,35 @@
 
     if (md.tipo === 'pendulo') {
       // Ejes girados con la cuerda: y hacia el pivote, x tangente a la trayectoria
-      var th = st.s;
+      var th = st.s, rapidez = Math.abs(p.L * st.v);
       h = D.fbdSVG('Masa del péndulo', [
         { b: 'W', mag: p.m * g, ang: abajo, cls: 'w' },
         { b: 'T', mag: k.T, ang: arriba + th, cls: 't' }
-      ], th * 180 / Math.PI, { descomponer: { cls: 'w', etiquetas: ['W cos θ', 'W sen θ'] }, acel: acel, forma: 'circulo' });
+      ], th * 180 / Math.PI, {
+        descomponer: { cls: 'w', etiquetas: ['W cos θ', 'W sen θ'] }, acel: acel, forma: 'circulo',
+        vel: { ang: st.v >= 0 ? th : th + Math.PI, mag: rapidez, frac: rapidez / (md.vMax || 1) }
+      });
     } else if (md.tipo === 'conico') {
-      // Ejes sin girar: y vertical, x horizontal hacia el centro del círculo
-      h = D.fbdSVG('Masa (centro del círculo a la derecha)', [
+      // Vista lateral (plano vertical que contiene la cuerda): no cambia al girar.
+      // Vista superior: la componente horizontal de T gira apuntando siempre al centro.
+      var fi = st.s;
+      h = D.fbdSVG('Vista lateral (centro del círculo a la derecha)', [
         { b: 'W', mag: p.m * g, ang: abajo, cls: 'w' },
         { b: 'T', mag: md.T, ang: arriba - md.th, cls: 't' }
-      ], 0, { descomponer: { cls: 't', etiquetas: ['T cos θ', 'T sen θ'] }, acel: acel, forma: 'circulo' });
+      ], 0, { descomponer: { cls: 't', etiquetas: ['T cos θ', 'T sen θ'] }, acel: acel, forma: 'circulo' }) +
+        D.topViewSVG('Vista desde arriba', fi + Math.PI,
+          { b: 'T sen θ', mag: md.T * Math.sin(md.th), cls: 't' }, fi - Math.PI / 2, 'v = ' + n3(md.v) + ' m/s',
+          'W y T cos θ son verticales: no se ven desde arriba');
     } else {
+      var al = st.s / md.rTray;                       // ángulo recorrido sobre la trayectoria
       h = D.fbdSVG('Auto visto desde atrás (centro de la curva a la derecha)', [
         { b: 'W', mag: md.N, ang: abajo, cls: 'w' },
         { b: 'N', mag: md.N, ang: arriba, cls: 'n' },
         { b: 'f', sub: 's', mag: md.f, ang: 0, cls: 'f' }
-      ], 0, { acel: acel });
+      ], 0, { acel: acel }) +
+        D.topViewSVG('Vista desde arriba', al - Math.PI / 2,
+          { b: 'f', sub: 's', mag: md.f, cls: 'f' }, al, 'v = ' + n3(p.v) + ' m/s',
+          'W y N son verticales: no se ven desde arriba');
     }
     el.innerHTML = h;
   }
