@@ -20,6 +20,7 @@
     md: null, sim: null, k0: null,   // resultados de la física
     colocar: null,            // función que mueve los cuerpos en la escena
     escalas: null,            // escalas de las gráficas (para el punto móvil)
+    energia: null,            // función que actualiza las barras de energía
     tau: 0,                   // instante que se está mostrando (s)
     reproduciendo: false, ultimoCuadro: 0, rapidez: 1,
     claveDCL: ''              // evita redibujar el diagrama si nada cambió
@@ -89,6 +90,7 @@
     // 4. Vistas
     estado.colocar = Lab.dibujo.buildScene($('scene'), sc, p, estado.sim);
     estado.escalas = Lab.graficas.simCharts($('ch_s'), $('ch_v'), estado.sim);
+    estado.energia = Lab.energia.render($('energia'), p, estado.md, estado.sim);
     Lab.solucion.render($('steps'), sc, p, estado.md, estado.sim, estado.k0);
     Lab.experimento.render(p, estado.md, estado.k0);
     mostrar();
@@ -115,6 +117,8 @@
     var cs = $('cur_s'), cv = $('cur_v'), e = estado.escalas;
     if (cs) { cs.setAttribute('cx', e.s.X(estado.tau)); cs.setAttribute('cy', e.s.Y(st.s)); }
     if (cv) { cv.setAttribute('cx', e.v.X(estado.tau)); cv.setAttribute('cy', e.v.Y(st.v)); }
+
+    estado.energia(estado.tau, st);
 
     // El diagrama solo cambia cuando cambia el régimen (reposo / sentido)
     var clave = estado.actual + k.phase;

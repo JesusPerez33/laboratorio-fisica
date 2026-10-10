@@ -97,7 +97,7 @@
     return { T: T, S: S, V: V, events: events, end: t };
   }
 
-  /** Posición y velocidad en un instante cualquiera (interpolación lineal) */
+  /** Posición y velocidad en un instante cualquiera, entre dos pasos guardados */
   function stateAt(sim, t) {
     var T = sim.T, ult = T.length - 1;
     if (ult === 0 || t <= 0) return { s: sim.S[0], v: sim.V[0] };
@@ -108,10 +108,13 @@
       var mid = (lo + hi) >> 1;
       if (T[mid] <= t) lo = mid; else hi = mid;
     }
-    var u = (t - T[lo]) / (T[hi] - T[lo] || 1);
+    // Dentro de un paso la aceleración es constante: v cambia en línea
+    // recta y s como parábola, así que la interpolación es exacta.
+    var h = T[hi] - T[lo] || 1, dt = t - T[lo];
+    var a = (sim.V[hi] - sim.V[lo]) / h;
     return {
-      s: sim.S[lo] + u * (sim.S[hi] - sim.S[lo]),
-      v: sim.V[lo] + u * (sim.V[hi] - sim.V[lo])
+      s: sim.S[lo] + sim.V[lo] * dt + 0.5 * a * dt * dt,
+      v: sim.V[lo] + a * dt
     };
   }
 
