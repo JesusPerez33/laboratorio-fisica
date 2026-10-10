@@ -115,12 +115,17 @@
     if (md.tipo === 'pendulo') {
       // Ejes girados con la cuerda: y hacia el pivote, x tangente a la trayectoria
       var th = st.s, rapidez = Math.abs(p.L * st.v);
+      // El cuerpo recorre un arco pequeño, a escala del que hace en la escena
+      var Lm = Math.min(110, 44 / Math.sin(md.th0)), base = Lm * (1 - Math.cos(md.th0)) / 2;
+      var arco = function (a) { return [Lm * Math.sin(a), Lm * (Math.cos(a) - 1) + base]; };
+      var aqui = arco(th), inicio = arco(md.th0);
       h = D.fbdSVG('Masa del péndulo', [
         { b: 'W', mag: p.m * g, ang: abajo, cls: 'w' },
         { b: 'T', mag: k.T, ang: arriba + th, cls: 't' }
       ], th * 180 / Math.PI, {
         descomponer: { cls: 'w', etiquetas: ['W cos θ', 'W sen θ'] }, acel: acel, forma: 'circulo',
-        vel: { ang: st.v >= 0 ? th : th + Math.PI, mag: rapidez, frac: rapidez / (md.vMax || 1) }
+        vel: { ang: st.v >= 0 ? th : th + Math.PI, mag: rapidez, frac: rapidez / (md.vMax || 1) },
+        mover: { dx: aqui[0], dy: aqui[1], gx: inicio[0], gy: inicio[1] }
       });
     } else if (md.tipo === 'conico') {
       // Vista lateral (plano vertical que contiene la cuerda): no cambia al girar.

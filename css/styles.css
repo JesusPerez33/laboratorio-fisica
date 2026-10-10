@@ -138,3 +138,4 @@ footer p{margin:0;max-width:80ch}
 .solid~.tk{stroke:none}
 .F.vel line{stroke-width:2.2}
 circle.ax{fill:none}
+.ghost{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 3}

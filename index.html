@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Laboratorio de Cuerpo Libre</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
-  <link rel="stylesheet" href="css/styles.css?v=0.4">
+  <link rel="stylesheet" href="css/styles.css?v=0.5">
 </head>
 <body>
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">Física mecánica · versión 0.4</p>
+    <p class="eyebrow">Física mecánica · versión 0.5</p>
     <h1>Laboratorio de Cuerpo Libre</h1>
     <p class="lede">Elige un problema de dinámica, en línea recta o en movimiento circular. El programa decide qué fuerzas actúan, dibuja el diagrama de cuerpo libre, resuelve la segunda ley de Newton paso a paso, simula el movimiento y contrasta la predicción con tus mediciones.</p>
   </header>
@@ -41,7 +41,7 @@
 
   <section>
     <h2>Diagrama de cuerpo libre</h2>
-    <p class="note">Las flechas de fuerza están a escala entre sí y siguen la animación. La velocidad y la aceleración se dibujan aparte porque no son fuerzas: mira cómo cambia la velocidad mientras las fuerzas se mantienen.</p>
+    <p class="note">El cuerpo se mueve en el diagrama igual que en la escena y lleva consigo sus fuerzas, dibujadas a escala. La silueta punteada marca dónde empezó. La velocidad y la aceleración van aparte, en las esquinas, porque no son fuerzas.</p>
     <div class="fbds" id="fbds"></div>
     <ul class="legend">
       <li class="w"><i></i>Peso</li><li class="n"><i></i>Normal</li><li class="f"><i></i>Fricción</li><li class="t"><i></i>Tensión</li><li class="p"><i></i>Fuerza aplicada</li><li style="color:var(--ink)"><i style="height:0;border-top:2px dashed currentColor;background:none"></i>Aceleración</li><li style="color:var(--muted)"><i></i>Velocidad</li>
@@ -96,16 +96,16 @@
 </div>
 
 <!-- El orden importa: cada archivo usa lo que definen los anteriores -->
-<script src="js/config.js?v=0.4"></script>
-<script src="js/fisica.js?v=0.4"></script>
-<script src="js/circular.js?v=0.4"></script>
-<script src="js/dibujo.js?v=0.4"></script>
-<script src="js/dibujo-circular.js?v=0.4"></script>
-<script src="js/solucion.js?v=0.4"></script>
-<script src="js/solucion-circular.js?v=0.4"></script>
-<script src="js/energia.js?v=0.4"></script>
-<script src="js/graficas.js?v=0.4"></script>
-<script src="js/experimento.js?v=0.4"></script>
-<script src="js/app.js?v=0.4"></script>
+<script src="js/config.js?v=0.5"></script>
+<script src="js/fisica.js?v=0.5"></script>
+<script src="js/circular.js?v=0.5"></script>
+<script src="js/dibujo.js?v=0.5"></script>
+<script src="js/dibujo-circular.js?v=0.5"></script>
+<script src="js/solucion.js?v=0.5"></script>
+<script src="js/solucion-circular.js?v=0.5"></script>
+<script src="js/energia.js?v=0.5"></script>
+<script src="js/graficas.js?v=0.5"></script>
+<script src="js/experimento.js?v=0.5"></script>
+<script src="js/app.js?v=0.5"></script>
 </body>
 </html>

@@ -157,6 +157,8 @@
    *                         vel: {ang, mag, frac} lo mismo con la velocidad; frac (0 a 1)
    *                           es la fracción de la rapidez máxima y fija el largo
    *                         forma: 'circulo' dibuja el cuerpo como una esfera
+   *                         mover: {dx, dy, gx, gy} desplazamiento actual del cuerpo y
+   *                           de la silueta de la posición inicial, en píxeles
    */
   function fbdSVG(title, forces, axDeg, opts) {
     opts = opts || {};
@@ -166,15 +168,24 @@
     var len = function (m) { return 36 + 62 * m / mx; };    // longitud a escala
     var ancla = function (ox) { return ox > 2 ? 'start' : ox < -2 ? 'end' : 'middle'; };
 
-    var h = '<svg viewBox="0 0 380 280" role="img" aria-label="Diagrama de cuerpo libre de ' + title + '">';
+    // El lienzo es más amplio que el dibujo para que el cuerpo tenga espacio de moverse
+    var h = '<svg viewBox="-44 -22 468 324" role="img" aria-label="Diagrama de cuerpo libre de ' + title + '">';
+    var cuerpo = function (clase) {
+      return opts.forma === 'circulo'
+        ? '<circle class="' + clase + '" cx="' + cx + '" cy="' + cy + '" r="15"/>'
+        : '<rect class="' + clase + '" x="-19" y="-13" width="38" height="26" rx="3" transform="translate(' + cx + ' ' + cy + ') rotate(' + (-axDeg) + ')"/>';
+    };
+    // Movimiento: una silueta marca la posición inicial y todo el diagrama
+    // (cuerpo, ejes y fuerzas) se desplaza con el cuerpo.
+    var mv = opts.mover || { dx: 0, dy: 0, gx: 0, gy: 0 };
+    if (opts.mover) h += '<g transform="translate(' + mv.gx + ' ' + mv.gy + ')">' + cuerpo('ghost') + '</g>';
+    h += '<g transform="translate(' + mv.dx + ' ' + mv.dy + ')">';
     // Ejes x e y (girados axDeg respecto a la horizontal)
     h += '<line class="ax" x1="' + (cx - tx * 118) + '" y1="' + (cy - ty * 118) + '" x2="' + (cx + tx * 118) + '" y2="' + (cy + ty * 118) + '"/>' +
       '<line class="ax" x1="' + (cx - nx * 118) + '" y1="' + (cy - ny * 118) + '" x2="' + (cx + nx * 118) + '" y2="' + (cy + ny * 118) + '"/>' +
       '<text class="axl" x="' + (cx + tx * 128) + '" y="' + (cy + ty * 128 + 5) + '" text-anchor="middle">x</text>' +
       '<text class="axl" x="' + (cx + nx * 128) + '" y="' + (cy + ny * 128 + 5) + '" text-anchor="middle">y</text>' +
-      (opts.forma === 'circulo'
-        ? '<circle class="body" cx="' + cx + '" cy="' + cy + '" r="15"/>'
-        : '<rect class="body" x="-19" y="-13" width="38" height="26" rx="3" transform="translate(' + cx + ' ' + cy + ') rotate(' + (-axDeg) + ')"/>');
+      cuerpo('body');
 
     // Componentes de una fuerza sobre los ejes (triángulo punteado)
     var desc = null;                              // {cls, lado} si se dibujó
@@ -212,25 +223,27 @@
       h += '<text class="fl ' + f.cls + '" x="' + lx + '" y="' + ly + '" text-anchor="' + an + '">' + f.b + sub + '= ' + n3(f.mag) + ' N</text>';
     });
 
+    h += '</g>';
+
     // Aceleración: se dibuja aparte, en la esquina, porque no es una fuerza
     if (opts.acel) {
-      var A = opts.acel, ax0 = 46, ay0 = 226;
+      var A = opts.acel, ax0 = 0, ay0 = 250;
       if (A.mag > 1e-6) {
         var adx = Math.cos(A.ang) * 22, ady = -Math.sin(A.ang) * 22;
         h += arrow(ax0 - adx, ay0 - ady, ax0 + adx, ay0 + ady, 'acc');
       }
-      h += '<text class="accl" x="12" y="270">a = ' + n3(A.mag) + ' m/s²</text>';
+      h += '<text class="accl" x="-34" y="292">a = ' + n3(A.mag) + ' m/s²</text>';
     }
 
     // Velocidad: también aparte. Su flecha crece y se encoge con la animación
     if (opts.vel) {
-      var V = opts.vel, vx0 = 46, vy0 = 50;
+      var V = opts.vel, vx0 = 0, vy0 = 30;
       if (V.mag > 1e-6) {
         var medio = 6 + 16 * Math.min(1, V.frac);
         var vdx = Math.cos(V.ang) * medio, vdy = -Math.sin(V.ang) * medio;
         h += arrow(vx0 - vdx, vy0 - vdy, vx0 + vdx, vy0 + vdy, 'vel');
       }
-      h += '<text class="accl" x="12" y="18">v = ' + n3(V.mag) + ' m/s</text>';
+      h += '<text class="accl" x="-34" y="-2">v = ' + n3(V.mag) + ' m/s</text>';
     }
     return '<div class="paper fbd"><h3>' + title + '</h3>' + h + '</svg></div>';
   }
@@ -252,7 +265,7 @@
     var ancla = function (ox) { return ox > 0.35 ? 'start' : ox < -0.35 ? 'end' : 'middle'; };
     var sub = fuerza.sub ? '<tspan dy="4" font-size="10.5">' + fuerza.sub + '</tspan><tspan dy="-4"> </tspan>' : ' ';
 
-    var h = '<svg viewBox="0 0 380 280" role="img" aria-label="' + title + '">' +
+    var h = '<svg viewBox="-44 -22 468 324" role="img" aria-label="' + title + '">' +
       '<circle class="ax" cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none"/>' +
       '<circle class="hub" cx="' + cx + '" cy="' + cy + '" r="3"/>' +
       arrow(px, py, px + vx * 54, py + vy * 54, 'vel') +
@@ -279,6 +292,14 @@
     };
     // Aceleración a lo largo de una dirección dada (cambia de sentido con el signo)
     var acel = function (ang) { return { ang: k.a >= 0 ? ang : ang + Math.PI, mag: Math.abs(k.a) }; };
+    // Desplazamiento del cuerpo dentro del diagrama: recorre ±40 px a lo largo
+    // de la dirección dada mientras s va de su mínimo a su máximo.
+    var mover = function (ang) {
+      var rango = sim.smax - sim.smin, A = 40;
+      var frac = function (s) { return rango > 1e-9 ? 2 * (s - sim.smin) / rango - 1 : 0; };
+      var a = frac(st.s), b = frac(sim.S[0]);
+      return { dx: Math.cos(ang) * A * a, dy: -Math.sin(ang) * A * a, gx: Math.cos(ang) * A * b, gy: -Math.sin(ang) * A * b };
+    };
     // Velocidad en esa misma dirección; su largo es proporcional a la rapidez
     var vel = function (ang) { return { ang: st.v >= 0 ? ang : ang + Math.PI, mag: Math.abs(st.v), frac: Math.abs(st.v) / (sim.vmax || 1) }; };
     var peso = { cls: 'w', etiquetas: ['W cos θ', 'W sen θ'] };
@@ -290,13 +311,13 @@
         { b: 'N', mag: md.N, ang: th + arriba, cls: 'n' },
         { b: 'P', mag: p.P, ang: th + rad(p.phi), cls: 'p' },
         friccion(th)
-      ], p.th || 0, { descomponer: peso, acel: acel(th), vel: vel(th) });
+      ], p.th || 0, { descomponer: peso, acel: acel(th), vel: vel(th), mover: mover(th) });
     } else {
       var T = Lab.fisica.tension(p, k.a);
       var colgante = [{ b: 'W', sub: '2', mag: p.m2 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }];
       if (sc.type === 'atwood') {
-        h = fbdSVG('Masa m₁', [{ b: 'W', sub: '1', mag: p.m1 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }], 0, { acel: acel(arriba), vel: vel(arriba) }) +
-            fbdSVG('Masa m₂', colgante, 0, { acel: acel(abajo), vel: vel(abajo) });
+        h = fbdSVG('Masa m₁', [{ b: 'W', sub: '1', mag: p.m1 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }], 0, { acel: acel(arriba), vel: vel(arriba), mover: mover(arriba) }) +
+            fbdSVG('Masa m₂', colgante, 0, { acel: acel(abajo), vel: vel(abajo), mover: mover(abajo) });
       } else {
         var th2 = rad(p.th);
         h = fbdSVG('Bloque m₁ (sobre el plano)', [
@@ -304,7 +325,7 @@
           { b: 'N', mag: md.N, ang: th2 + arriba, cls: 'n' },
           { b: 'T', mag: T, ang: th2, cls: 't' },
           friccion(th2)
-        ], p.th, { descomponer: peso, acel: acel(th2), vel: vel(th2) }) + fbdSVG('Masa colgante m₂', colgante, 0, { acel: acel(abajo), vel: vel(abajo) });
+        ], p.th, { descomponer: peso, acel: acel(th2), vel: vel(th2), mover: mover(th2) }) + fbdSVG('Masa colgante m₂', colgante, 0, { acel: acel(abajo), vel: vel(abajo), mover: mover(abajo) });
       }
     }
     el.innerHTML = h;

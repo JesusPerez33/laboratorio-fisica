@@ -88,6 +88,8 @@
     estado.k0 = motor.dyn(estado.md, estado.sim.V[0], estado.sim.S[0]);
     estado.reproduciendo = false; estado.tau = 0;
     estado.sim.vmax = Math.max.apply(null, estado.sim.V.map(Math.abs));   // para escalar la flecha de velocidad
+    estado.sim.smin = Math.min.apply(null, estado.sim.S);                 // recorrido, para mover el cuerpo en el diagrama
+    estado.sim.smax = Math.max.apply(null, estado.sim.S);
 
     // 2. Advertencias sobre los límites del modelo
     var avisos = [];
