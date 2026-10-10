@@ -11,9 +11,9 @@
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">Física mecánica · prototipo v0.1</p>
+    <p class="eyebrow">Física mecánica · versión 0.3</p>
     <h1>Laboratorio de Cuerpo Libre</h1>
-    <p class="lede">Configura un problema de dinámica. El programa decide qué fuerzas actúan, dibuja el diagrama de cuerpo libre, resuelve la segunda ley de Newton paso a paso, simula el movimiento y contrasta la predicción con tus mediciones.</p>
+    <p class="lede">Elige un problema de dinámica, en línea recta o en movimiento circular. El programa decide qué fuerzas actúan, dibuja el diagrama de cuerpo libre, resuelve la segunda ley de Newton paso a paso, simula el movimiento y contrasta la predicción con tus mediciones.</p>
   </header>
 
   <nav class="tabs" id="tabs" aria-label="Tipo de problema"></nav>
@@ -30,9 +30,9 @@
       </div>
       <dl class="readouts">
         <div><dt>Tiempo</dt><dd id="o_t">0</dd></div>
-        <div><dt>Posición s</dt><dd id="o_s">0</dd></div>
-        <div><dt>Velocidad</dt><dd id="o_v">0</dd></div>
-        <div><dt>Aceleración</dt><dd id="o_a">0</dd></div>
+        <div><dt id="l_1">Posición s</dt><dd id="o_s">0</dd></div>
+        <div><dt id="l_2">Velocidad</dt><dd id="o_v">0</dd></div>
+        <div><dt id="l_3">Aceleración</dt><dd id="o_a">0</dd></div>
         <div><dt>Estado</dt><dd class="txt" id="o_e"></dd></div>
       </dl>
       <p class="note" id="conv"></p>
@@ -41,10 +41,10 @@
 
   <section>
     <h2>Diagrama de cuerpo libre</h2>
-    <p class="note">Las flechas están a escala entre sí y se actualizan durante la simulación: si el bloque se detiene o cambia de sentido, la fricción cambia con él.</p>
+    <p class="note">Las flechas están a escala entre sí y se actualizan durante la simulación. La aceleración se dibuja aparte, en la esquina, para compararla con la suma de las fuerzas.</p>
     <div class="fbds" id="fbds"></div>
     <ul class="legend">
-      <li class="w"><i></i>Peso</li><li class="n"><i></i>Normal</li><li class="f"><i></i>Fricción</li><li class="t"><i></i>Tensión</li><li class="p"><i></i>Fuerza aplicada</li>
+      <li class="w"><i></i>Peso</li><li class="n"><i></i>Normal</li><li class="f"><i></i>Fricción</li><li class="t"><i></i>Tensión</li><li class="p"><i></i>Fuerza aplicada</li><li style="color:var(--ink)"><i style="height:0;border-top:2px dashed currentColor;background:none"></i>Aceleración (no es una fuerza)</li>
     </ul>
   </section>
 
@@ -53,22 +53,22 @@
     <ol class="steps" id="steps"></ol>
   </section>
 
-  <section>
+  <section id="sec_en">
     <h2>Balance de energía</h2>
     <p class="note">Las barras siguen la animación. La suma de abajo debe mantenerse igual al valor inicial durante todo el movimiento: es el teorema del trabajo y la energía comprobando al motor de física.</p>
     <div class="panel energia" id="energia"></div>
   </section>
 
   <section>
-    <h2>Movimiento simulado</h2>
-    <p class="note">El motor avanza el sistema en pasos de 1/240 s. En cada paso recalcula la fricción según la velocidad, así detecta cuándo el cuerpo se detiene, se queda quieto o regresa.</p>
+    <h2 id="graf_t">Movimiento simulado</h2>
+    <p class="note" id="graf_n"></p>
     <div class="charts">
       <div class="panel"><svg id="ch_s" viewBox="0 0 380 230" role="img" aria-label="Posición contra tiempo"></svg></div>
       <div class="panel"><svg id="ch_v" viewBox="0 0 380 230" role="img" aria-label="Velocidad contra tiempo"></svg></div>
     </div>
   </section>
 
-  <section>
+  <section id="sec_exp">
     <h2>Contraste con el experimento</h2>
     <p class="note">Pega aquí tiempo y posición medidos en el video de tu montaje, un par por línea. Se ajusta <span class="eq">x = x<sub>0</sub> + v<sub>0</sub>t + ½at²</span> por mínimos cuadrados y se compara la aceleración medida con la que predice el modelo de arriba.</p>
     <div class="exp">
@@ -98,8 +98,11 @@
 <!-- El orden importa: cada archivo usa lo que definen los anteriores -->
 <script src="js/config.js"></script>
 <script src="js/fisica.js"></script>
+<script src="js/circular.js"></script>
 <script src="js/dibujo.js"></script>
+<script src="js/dibujo-circular.js"></script>
 <script src="js/solucion.js"></script>
+<script src="js/solucion-circular.js"></script>
 <script src="js/energia.js"></script>
 <script src="js/graficas.js"></script>
 <script src="js/experimento.js"></script>

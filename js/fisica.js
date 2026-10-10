@@ -121,6 +121,18 @@
   /** Tensión de la cuerda en los problemas con masa colgante */
   function tension(p, a) { return p.m2 * (p.g - a); }
 
-  Lab.fisica = { model: model, dyn: dyn, simulate: simulate, stateAt: stateAt, tension: tension };
+  /** Magnitudes que se muestran bajo la escena durante la animación */
+  function lecturas(sc, md, p, st, k) {
+    var n3 = Lab.util.n3, estado;
+    if (k.phase === 0) estado = md.fsmax > 0 ? 'En reposo, sostenido por la fricción estática' : 'En reposo, fuerzas equilibradas';
+    else if (st.v === 0) estado = 'Arranca ' + (k.phase > 0 ? sc.pos : sc.neg);
+    else estado = 'Se mueve ' + (st.v > 0 ? sc.pos : sc.neg);
+    return {
+      items: [['Posición s', n3(st.s) + ' m'], ['Velocidad', n3(st.v) + ' m/s'], ['Aceleración', n3(k.a) + ' m/s²']],
+      estado: estado
+    };
+  }
+
+  Lab.fisica = { model: model, dyn: dyn, simulate: simulate, stateAt: stateAt, tension: tension, lecturas: lecturas };
 
 })(window.Lab);

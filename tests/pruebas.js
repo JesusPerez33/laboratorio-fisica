@@ -98,6 +98,46 @@
   cerca('Energía: se conserva en el plano con masa colgante',
     desviacionEnergia('colg', Object.assign({ v0: 0, d: 0.8 }, pc)), 0, 1e-9);
 
+  /* ---------- Movimiento circular ---------- */
+  var C = Lab.circular;
+
+  // Péndulo simple
+  var pp = { m: 0.2, L: 1, th0: 35, g: g }, mdp = C.model('pendulo', pp), simp = C.simulate(mdp, pp);
+  cerca('Péndulo: periodo simulado = periodo exacto para esa amplitud', simp.periodo, C.periodoExacto(1, g, rad(35)), 1e-4);
+  var pchico = { m: 0.2, L: 1, th0: 2, g: g };
+  cerca('Péndulo: con amplitud pequeña el periodo tiende a 2π√(L/g)',
+    C.simulate(C.model('pendulo', pchico), pchico).periodo, 2 * Math.PI * Math.sqrt(1 / g), 1e-3);
+  cerca('Péndulo: al soltarlo, T = mg cos θ₀', C.dyn(mdp, 0, rad(35)).T, 0.2 * g * Math.cos(rad(35)));
+  var wBajo = mdp.vMax / pp.L;
+  cerca('Péndulo: en el punto más bajo, T = mg(3 − 2cos θ₀)', C.dyn(mdp, wBajo, 0).T, 0.2 * g * (3 - 2 * Math.cos(rad(35))));
+  var vSim = 0;
+  simp.V.forEach(function (w) { vSim = Math.max(vSim, Math.abs(w) * pp.L); });
+  cerca('Péndulo: rapidez máxima simulada = √(2gL(1 − cos θ₀))', vSim, mdp.vMax, 1e-4);
+  cerca('Péndulo: el periodo no depende de la masa',
+    C.simulate(C.model('pendulo', { m: 5, L: 1, th0: 35, g: g }), { m: 5, L: 1, th0: 35, g: g }).periodo, simp.periodo);
+  var peorE = 0, E0 = Lab.energia.calcular(pp, mdp, simp, 0, { s: simp.S[0], v: 0 }).total;
+  for (var j = 0; j < simp.T.length; j++) {
+    peorE = Math.max(peorE, Math.abs(Lab.energia.calcular(pp, mdp, simp, simp.T[j], { s: simp.S[j], v: simp.V[j] }).total - E0));
+  }
+  cerca('Péndulo: Runge-Kutta conserva la energía (error < 10⁻⁹ J)', peorE, 0, 1e-9);
+
+  // Péndulo cónico
+  var pk = { m: 0.2, L: 1, thc: 30, g: g }, mdk = C.model('conico', pk);
+  cerca('Cónico: T cos θ = mg', mdk.T * Math.cos(rad(30)), 0.2 * g);
+  cerca('Cónico: T sen θ = mv²/r', mdk.T * Math.sin(rad(30)), 0.2 * mdk.v * mdk.v / mdk.r);
+  cerca('Cónico: periodo = 2π√(L cos θ/g)', mdk.periodo, 2 * Math.PI * Math.sqrt(Math.cos(rad(30)) / g));
+  cerca('Cónico: la rapidez no depende de la masa', C.model('conico', { m: 3, L: 1, thc: 30, g: g }).v, mdk.v);
+
+  // Curva plana
+  var pv = { mc: 1200, r: 30, v: 12, mus: 0.7, g: g }, mdv = C.model('curva', pv);
+  cerca('Curva: fricción necesaria = mv²/r', mdv.fnec, 1200 * 144 / 30);
+  cerca('Curva: v máx = √(μs g r)', mdv.vmax, Math.sqrt(0.7 * g * 30));
+  cierto('Curva: por debajo de v máx no derrapa', !mdv.derrapa);
+  cierto('Curva: por encima de v máx derrapa', C.model('curva', { mc: 1200, r: 30, v: mdv.vmax + 0.5, mus: 0.7, g: g }).derrapa);
+  cerca('Curva: v máx no depende de la masa', C.model('curva', { mc: 3000, r: 30, v: 12, mus: 0.7, g: g }).vmax, mdv.vmax);
+  var mdd = C.model('curva', { mc: 1200, r: 30, v: 20, mus: 0.7, g: g });
+  cerca('Curva: al derrapar, el radio de la trayectoria es v²/(μs g)', mdd.rTray, 400 / (0.7 * g));
+
   /* ---------- Ajuste experimental ---------- */
   var ts = [], xs = [];
   for (var i = 0; i < 9; i++) { ts.push(i * 0.1); xs.push(0.02 + 0.3 * i * 0.1 + 0.5 * 2.5 * i * i * 0.01); }

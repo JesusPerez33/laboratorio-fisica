@@ -4,13 +4,31 @@
    demás módulos. Es el único archivo que sabe "qué pasa cuando
    el usuario mueve algo".
 
-   Flujo:  control cambia → recalcular() → fisica → dibujo,
-           solucion, graficas, experimento → mostrar()
+   Flujo:  control cambia → recalcular() → motor de física →
+           dibujo, solución, energía, gráficas → mostrar()
+
+   Hay dos familias de problemas (línea recta y movimiento
+   circular). Cada una aporta su motor y sus vistas con la misma
+   interfaz, así que este archivo las trata igual.
    ========================================================== */
 (function (Lab) {
   'use strict';
-  var $ = Lab.util.$, n3 = Lab.util.n3;
-  var F = Lab.fisica, SC = Lab.SCENARIOS, PS = Lab.PARAMS;
+  var $ = Lab.util.$;
+  var SC = Lab.SCENARIOS, PS = Lab.PARAMS;
+
+  /* ---------- Familias de problemas ---------- */
+  var LINEAL = {
+    motor: Lab.fisica, dibujo: Lab.dibujo, solucion: Lab.solucion,
+    graficas: Lab.graficas.simCharts,
+    energia: function () { return true; }, experimento: true
+  };
+  var CIRCULAR = {
+    motor: Lab.circular, dibujo: Lab.dibujoCircular, solucion: Lab.solucionCircular,
+    graficas: Lab.graficas.circularCharts,
+    // Solo en el péndulo simple la energía cambia de forma durante el movimiento
+    energia: function (sc) { return sc.type === 'pendulo'; }, experimento: false
+  };
+  var familiaDe = function (sc) { return Lab.circular.TIPOS.indexOf(sc.type) >= 0 ? CIRCULAR : LINEAL; };
 
   /* ---------- Estado ---------- */
   var estado = {
@@ -19,7 +37,7 @@
     g: Lab.G_ESTANDAR,        // gravedad, compartida por todos
     md: null, sim: null, k0: null,   // resultados de la física
     colocar: null,            // función que mueve los cuerpos en la escena
-    escalas: null,            // escalas de las gráficas (para el punto móvil)
+    graficas: null,           // {mover}: actualiza los puntos móviles de las gráficas
     energia: null,            // función que actualiza las barras de energía
     tau: 0,                   // instante que se está mostrando (s)
     reproduciendo: false, ultimoCuadro: 0, rapidez: 1,
@@ -63,18 +81,18 @@
 
   /** Rehace todo a partir de los parámetros actuales */
   function recalcular() {
-    var sc = escenario(), p = parametros();
+    var sc = escenario(), p = parametros(), fam = familiaDe(sc), motor = fam.motor;
 
     // 1. Física
-    estado.md = F.model(sc.type, p);
-    estado.sim = F.simulate(estado.md, p);
-    estado.k0 = F.dyn(estado.md, p.v0);
+    estado.md = motor.model(sc.type, p);
+    estado.sim = motor.simulate(estado.md, p);
+    estado.k0 = motor.dyn(estado.md, estado.sim.V[0], estado.sim.S[0]);
     estado.reproduciendo = false; estado.tau = 0; estado.claveDCL = '';
 
     // 2. Advertencias sobre los límites del modelo
     var avisos = [];
     if (estado.md.lift) avisos.push('La componente vertical de P supera al peso: el bloque se despegaría de la superficie y este modelo deja de aplicar.');
-    if ((p.muk || 0) > (p.mus || 0)) avisos.push('μₖ es mayor que μₛ, algo que no ocurre en materiales reales. La simulación usa μₖ = μₛ.');
+    if (fam === LINEAL && (p.muk || 0) > (p.mus || 0)) avisos.push('μₖ es mayor que μₛ, algo que no ocurre en materiales reales. La simulación usa μₖ = μₛ.');
     $('warn').hidden = !avisos.length;
     $('warn').textContent = avisos.join(' ');
 
@@ -88,43 +106,53 @@
     $('conv').textContent = sc.conv;
 
     // 4. Vistas
-    estado.colocar = Lab.dibujo.buildScene($('scene'), sc, p, estado.sim);
-    estado.escalas = Lab.graficas.simCharts($('ch_s'), $('ch_v'), estado.sim);
-    estado.energia = Lab.energia.render($('energia'), p, estado.md, estado.sim);
-    Lab.solucion.render($('steps'), sc, p, estado.md, estado.sim, estado.k0);
-    Lab.experimento.render(p, estado.md, estado.k0);
+    var graf = sc.graf || Lab.GRAF_LINEAL;
+    $('graf_t').textContent = graf.titulo;
+    $('graf_n').textContent = graf.nota;
+    estado.colocar = fam.dibujo.buildScene($('scene'), sc, p, estado.sim, estado.md);
+    estado.graficas = fam.graficas($('ch_s'), $('ch_v'), sc, p, estado.md, estado.sim);
+    fam.solucion.render($('steps'), sc, p, estado.md, estado.sim, estado.k0);
+
+    var conEnergia = fam.energia(sc);
+    $('sec_en').hidden = !conEnergia;
+    estado.energia = conEnergia ? Lab.energia.render($('energia'), p, estado.md, estado.sim) : null;
+
+    $('sec_exp').hidden = !fam.experimento;
+    if (fam.experimento) Lab.experimento.render(p, estado.md, estado.k0);
+
     mostrar();
     actualizarBoton();
   }
 
   /* ---------- Animación ---------- */
 
-  /** Pinta el instante estado.tau: escena, lecturas, gráficas y diagrama */
+  /** Pinta el instante estado.tau: escena, lecturas, gráficas, energía y diagrama */
   function mostrar() {
-    var sc = escenario(), sim = estado.sim;
-    var st = F.stateAt(sim, estado.tau), k = F.dyn(estado.md, st.v);
+    var sc = escenario(), p = parametros(), fam = familiaDe(sc), sim = estado.sim;
+    var st = Lab.fisica.stateAt(sim, estado.tau);
+    var k = fam.motor.dyn(estado.md, st.v, st.s);
 
     estado.colocar(st.s);
+
+    // Lecturas numéricas: cada motor decide qué tres magnitudes mostrar
+    var lec = fam.motor.lecturas(sc, estado.md, p, st, k);
     $('o_t').textContent = estado.tau.toFixed(2) + ' s';
-    $('o_s').textContent = n3(st.s) + ' m';
-    $('o_v').textContent = n3(st.v) + ' m/s';
-    $('o_a').textContent = n3(k.a) + ' m/s²';
-    $('o_e').textContent = k.phase === 0
-      ? (estado.md.fsmax > 0 ? 'En reposo, sostenido por la fricción estática' : 'En reposo, fuerzas equilibradas')
-      : st.v === 0 ? 'Arranca ' + (k.phase > 0 ? sc.pos : sc.neg) : 'Se mueve ' + (st.v > 0 ? sc.pos : sc.neg);
+    lec.items.forEach(function (item, i) {
+      $('l_' + (i + 1)).textContent = item[0];
+      $(['o_s', 'o_v', 'o_a'][i]).textContent = item[1];
+    });
+    $('o_e').textContent = lec.estado;
     $('scrub').value = sim.end > 0 ? Math.round(estado.tau / sim.end * 1000) : 0;
 
-    var cs = $('cur_s'), cv = $('cur_v'), e = estado.escalas;
-    if (cs) { cs.setAttribute('cx', e.s.X(estado.tau)); cs.setAttribute('cy', e.s.Y(st.s)); }
-    if (cv) { cv.setAttribute('cx', e.v.X(estado.tau)); cv.setAttribute('cy', e.v.Y(st.v)); }
+    estado.graficas.mover(estado.tau, st, k);
+    if (estado.energia) estado.energia(estado.tau, st);
 
-    estado.energia(estado.tau, st);
-
-    // El diagrama solo cambia cuando cambia el régimen (reposo / sentido)
+    // El diagrama se redibuja cuando cambia el régimen (reposo / sentido).
+    // phase === null significa que las fuerzas cambian en cada instante.
     var clave = estado.actual + k.phase;
-    if (clave !== estado.claveDCL) {
+    if (k.phase === null || clave !== estado.claveDCL) {
       estado.claveDCL = clave;
-      Lab.dibujo.renderFBD($('fbds'), sc, parametros(), estado.md, k);
+      fam.dibujo.renderFBD($('fbds'), sc, p, estado.md, k, st);
     }
   }
 
@@ -178,7 +206,9 @@
     });
     $('speed').addEventListener('change', function (e) { estado.rapidez = parseFloat(e.target.value); });
 
-    var refrescarExperimento = function () { Lab.experimento.render(parametros(), estado.md, estado.k0); };
+    var refrescarExperimento = function () {
+      if (familiaDe(escenario()).experimento) Lab.experimento.render(parametros(), estado.md, estado.k0);
+    };
     $('data').addEventListener('input', refrescarExperimento);
     $('exreset').addEventListener('click', function () { $('data').value = Lab.DATOS_EJEMPLO; refrescarExperimento(); });
   }

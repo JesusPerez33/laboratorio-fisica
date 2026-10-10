@@ -80,8 +80,8 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 .ang{fill:var(--ink);font:italic 15px var(--math)}
 .ax{stroke:var(--muted);stroke-width:1;stroke-dasharray:5 4}
 .axl{fill:var(--muted);font:italic 14px var(--math)}
-.cmp{stroke:var(--f-w);stroke-width:1.3;stroke-dasharray:4 3;fill:none}
-.cmpl{fill:var(--f-w);font:italic 12.5px var(--math)}
+.cmp{stroke:currentColor;stroke-width:1.3;stroke-dasharray:4 3;fill:none}
+.cmpl{fill:currentColor;font:italic 12.5px var(--math)}
 .F line{stroke:currentColor;stroke-width:2.6;stroke-linecap:round}.F polygon{fill:currentColor}
 .fl{fill:currentColor;font:600 14px var(--math)}
 .w{color:var(--f-w)}.n{color:var(--f-n)}.f{color:var(--f-f)}.t{color:var(--f-t)}.p{color:var(--f-p)}
@@ -125,3 +125,14 @@ footer p{margin:0;max-width:80ch}
 .en-v{font-family:var(--math);font-size:16px;font-variant-numeric:tabular-nums;text-align:right}
 .en-bal{margin:4px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)}
 .en-bal .eq{color:var(--ink)}
+
+/* Movimiento circular y vector aceleración */
+.acc{color:var(--ink)}.F.acc line{stroke-dasharray:5 4;stroke-width:2}
+.accl{fill:var(--ink);font:italic 13.5px var(--math)}
+.vel{color:var(--muted)}
+.road{stroke:var(--solid);fill:none}
+.edge{stroke:var(--ink);stroke-width:1.5;fill:none}
+.skid{stroke:var(--f-w);stroke-width:2.2;stroke-dasharray:7 5;fill:none}
+/* Halo detrás de los rótulos para que los ejes no los crucen */
+.fl,.cmpl,.accl,.axl,.tk,.ang{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.solid~.tk{stroke:none}

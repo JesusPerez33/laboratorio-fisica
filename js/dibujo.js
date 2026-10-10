@@ -150,31 +150,47 @@
    * @param {string} title
    * @param {Array}  forces  [{b: símbolo, sub: subíndice, mag: N, ang: rad, cls}]
    *                         ang se mide desde +x en sentido antihorario.
-   * @param {number} axDeg   inclinación de los ejes (ángulo del plano)
-   * @param {boolean} decomp dibujar las componentes del peso
+   * @param {number} axDeg   inclinación de los ejes en grados
+   * @param {object} [opts]  descomponer: {cls, etiquetas: [sobre y, sobre x]}
+   *                           dibuja las componentes de esa fuerza sobre los ejes
+   *                         acel: {ang, mag} muestra aparte el vector aceleración
+   *                         forma: 'circulo' dibuja el cuerpo como una esfera
    */
-  function fbdSVG(title, forces, axDeg, decomp) {
+  function fbdSVG(title, forces, axDeg, opts) {
+    opts = opts || {};
     var cx = 190, cy = 140, a = rad(axDeg);
     var tx = Math.cos(a), ty = -Math.sin(a), nx = -Math.sin(a), ny = -Math.cos(a);
     var mx = Math.max.apply(null, forces.map(function (f) { return f.mag; }).concat(1e-9));
     var len = function (m) { return 36 + 62 * m / mx; };    // longitud a escala
+    var ancla = function (ox) { return ox > 2 ? 'start' : ox < -2 ? 'end' : 'middle'; };
 
     var h = '<svg viewBox="0 0 380 280" role="img" aria-label="Diagrama de cuerpo libre de ' + title + '">';
-    // Ejes x (a lo largo de la superficie) e y (perpendicular)
+    // Ejes x e y (girados axDeg respecto a la horizontal)
     h += '<line class="ax" x1="' + (cx - tx * 118) + '" y1="' + (cy - ty * 118) + '" x2="' + (cx + tx * 118) + '" y2="' + (cy + ty * 118) + '"/>' +
       '<line class="ax" x1="' + (cx - nx * 118) + '" y1="' + (cy - ny * 118) + '" x2="' + (cx + nx * 118) + '" y2="' + (cy + ny * 118) + '"/>' +
       '<text class="axl" x="' + (cx + tx * 128) + '" y="' + (cy + ty * 128 + 5) + '" text-anchor="middle">x</text>' +
       '<text class="axl" x="' + (cx + nx * 128) + '" y="' + (cy + ny * 128 + 5) + '" text-anchor="middle">y</text>' +
-      '<rect class="body" x="-19" y="-13" width="38" height="26" rx="3" transform="translate(' + cx + ' ' + cy + ') rotate(' + (-axDeg) + ')"/>';
+      (opts.forma === 'circulo'
+        ? '<circle class="body" cx="' + cx + '" cy="' + cy + '" r="15"/>'
+        : '<rect class="body" x="-19" y="-13" width="38" height="26" rx="3" transform="translate(' + cx + ' ' + cy + ') rotate(' + (-axDeg) + ')"/>');
 
-    // Componentes del peso (triángulo punteado)
-    var wf = forces.filter(function (f) { return f.cls === 'w'; })[0];
-    var dec = decomp && axDeg > 1 && wf;
-    if (dec) {
-      var Lw = len(wf.mag), c = Math.cos(a), s = Math.sin(a), qx = cx + Lw * c * s, qy = cy + Lw * c * c;
-      h += '<path class="cmp" d="M' + cx + ' ' + cy + 'L' + qx + ' ' + qy + 'L' + cx + ' ' + (cy + Lw) + '"/>' +
-        '<text class="cmpl" x="' + ((cx + qx) / 2 + 9) + '" y="' + ((cy + qy) / 2) + '">W cos θ</text>' +
-        '<text class="cmpl" x="' + ((cx + qx) / 2 + 9) + '" y="' + ((qy + cy + Lw) / 2 + 14) + '">W sen θ</text>';
+    // Componentes de una fuerza sobre los ejes (triángulo punteado)
+    var desc = null;                              // {cls, lado} si se dibujó
+    if (opts.descomponer) {
+      var fd = forces.filter(function (f) { return f.cls === opts.descomponer.cls; })[0];
+      if (fd && fd.mag > 1e-9) {
+        var Ld = len(fd.mag), ddx = Math.cos(fd.ang), ddy = -Math.sin(fd.ang);
+        var cn = Ld * (ddx * nx + ddy * ny), ct = Ld * (ddx * tx + ddy * ty);   // sobre y, sobre x
+        if (Math.abs(cn) > 6 && Math.abs(ct) > 6) {
+          var qx = cx + nx * cn, qy = cy + ny * cn, ex0 = cx + ddx * Ld, ey0 = cy + ddy * Ld;
+          var o1x = -Math.sign(ct) * tx * 9, o1y = -Math.sign(ct) * ty * 9;     // rótulos por fuera del triángulo
+          var o2x = Math.sign(cn) * nx * 15, o2y = Math.sign(cn) * ny * 15;
+          h += '<g class="' + fd.cls + '"><path class="cmp" d="M' + cx + ' ' + cy + 'L' + qx + ' ' + qy + 'L' + ex0 + ' ' + ey0 + '"/>' +
+            '<text class="cmpl" x="' + ((cx + qx) / 2 + o1x) + '" y="' + ((cy + qy) / 2 + o1y + 4) + '" text-anchor="' + ancla(o1x) + '">' + opts.descomponer.etiquetas[0] + '</text>' +
+            '<text class="cmpl" x="' + ((qx + ex0) / 2 + o2x) + '" y="' + ((qy + ey0) / 2 + o2y + 4) + '" text-anchor="' + ancla(o2x) + '">' + opts.descomponer.etiquetas[1] + '</text></g>';
+          desc = { cls: fd.cls, lado: Math.sign(qx - cx) || 1 };
+        }
+      }
     }
 
     var usados = [];                              // direcciones ya ocupadas
@@ -188,10 +204,21 @@
       h += arrow(ox, oy, ex, ey, f.cls);
 
       var lx = ex + dx * 12, ly = ey + dy * 14 + 5, an = dx > 0.35 ? 'start' : dx < -0.35 ? 'end' : 'middle';
-      if (f.cls === 'w' && dec) { lx = ex - 9; ly = ey + 2; an = 'end'; }
+      // El rótulo del peso descompuesto va del lado contrario al triángulo
+      if (desc && desc.cls === 'w' && f.cls === 'w') { lx = ex - 9 * desc.lado; ly = ey + 2; an = desc.lado > 0 ? 'end' : 'start'; }
       var sub = f.sub ? '<tspan dy="4" font-size="10.5">' + f.sub + '</tspan><tspan dy="-4"> </tspan>' : ' ';
       h += '<text class="fl ' + f.cls + '" x="' + lx + '" y="' + ly + '" text-anchor="' + an + '">' + f.b + sub + '= ' + n3(f.mag) + ' N</text>';
     });
+
+    // Aceleración: se dibuja aparte, en la esquina, porque no es una fuerza
+    if (opts.acel) {
+      var A = opts.acel, ax0 = 46, ay0 = 226;
+      if (A.mag > 1e-6) {
+        var adx = Math.cos(A.ang) * 22, ady = -Math.sin(A.ang) * 22;
+        h += arrow(ax0 - adx, ay0 - ady, ax0 + adx, ay0 + ady, 'acc');
+      }
+      h += '<text class="accl" x="12" y="270">a = ' + n3(A.mag) + ' m/s²</text>';
+    }
     return '<div class="paper fbd"><h3>' + title + '</h3>' + h + '</svg></div>';
   }
 
@@ -205,6 +232,9 @@
     var friccion = function (th) {
       return { b: 'f', sub: k.phase === 0 ? 's' : 'k', mag: Math.abs(k.f), ang: k.f >= 0 ? th : th + Math.PI, cls: 'f' };
     };
+    // Aceleración a lo largo de una dirección dada (cambia de sentido con el signo)
+    var acel = function (ang) { return { ang: k.a >= 0 ? ang : ang + Math.PI, mag: Math.abs(k.a) }; };
+    var peso = { cls: 'w', etiquetas: ['W cos θ', 'W sen θ'] };
 
     if (sc.type === 'plano') {
       var th = rad(p.th || 0);
@@ -213,13 +243,13 @@
         { b: 'N', mag: md.N, ang: th + arriba, cls: 'n' },
         { b: 'P', mag: p.P, ang: th + rad(p.phi), cls: 'p' },
         friccion(th)
-      ], p.th || 0, true);
+      ], p.th || 0, { descomponer: peso, acel: acel(th) });
     } else {
       var T = Lab.fisica.tension(p, k.a);
       var colgante = [{ b: 'W', sub: '2', mag: p.m2 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }];
       if (sc.type === 'atwood') {
-        h = fbdSVG('Masa m₁', [{ b: 'W', sub: '1', mag: p.m1 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }], 0) +
-            fbdSVG('Masa m₂', colgante, 0);
+        h = fbdSVG('Masa m₁', [{ b: 'W', sub: '1', mag: p.m1 * g, ang: abajo, cls: 'w' }, { b: 'T', mag: T, ang: arriba, cls: 't' }], 0, { acel: acel(arriba) }) +
+            fbdSVG('Masa m₂', colgante, 0, { acel: acel(abajo) });
       } else {
         var th2 = rad(p.th);
         h = fbdSVG('Bloque m₁ (sobre el plano)', [
@@ -227,7 +257,7 @@
           { b: 'N', mag: md.N, ang: th2 + arriba, cls: 'n' },
           { b: 'T', mag: T, ang: th2, cls: 't' },
           friccion(th2)
-        ], p.th, true) + fbdSVG('Masa colgante m₂', colgante, 0);
+        ], p.th, { descomponer: peso, acel: acel(th2) }) + fbdSVG('Masa colgante m₂', colgante, 0, { acel: acel(abajo) });
       }
     }
     el.innerHTML = h;

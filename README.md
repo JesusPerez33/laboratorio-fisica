@@ -19,8 +19,11 @@ laboratorio/
 └── js/
     ├── config.js       Parámetros, problemas disponibles y utilidades
     ├── fisica.js       Motor de física: modelo, fricción, simulación
+    ├── circular.js     Motor del movimiento circular: péndulos y curva plana
     ├── dibujo.js       Escena animada y diagramas de cuerpo libre (SVG)
+    ├── dibujo-circular.js    Escenas y diagramas del movimiento circular
     ├── solucion.js     Redacción de la solución paso a paso
+    ├── solucion-circular.js  Pasos de los problemas de movimiento circular
     ├── energia.js      Balance de energía en vivo (trabajo y energía)
     ├── graficas.js     Gráficas de posición, velocidad y datos
     ├── experimento.js  Ajuste por mínimos cuadrados y comparación
@@ -50,7 +53,18 @@ Todos los módulos se cuelgan de un único objeto global, `Lab`
 (`Lab.fisica`, `Lab.dibujo`, …), para no llenar el espacio global de nombres y
 para que la página funcione abriéndola directamente desde el disco.
 
-## El modelo físico en tres funciones
+## Dos familias de problemas
+
+| Familia | Problemas | Motor | Método |
+|---|---|---|---|
+| Línea recta | Plano inclinado, superficie horizontal, Atwood, plano con masa colgante | `fisica.js` | Aceleración constante por tramos, con cambio de fricción estática a cinética |
+| Movimiento circular | Péndulo simple, péndulo cónico, curva plana | `circular.js` | Péndulo simple: integración numérica Runge-Kutta 4. Los otros dos: movimiento circular uniforme |
+
+Los dos motores exponen las mismas funciones (`model`, `dyn`, `simulate`,
+`lecturas`) y sus vistas también (`buildScene`, `renderFBD`, `render`), así que
+`app.js` no necesita saber qué problema está resolviendo.
+
+## El modelo de línea recta en tres funciones
 
 Los cuatro problemas tienen un solo grado de libertad, la coordenada `s`.
 
